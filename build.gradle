@@ -1,0 +1,124 @@
+/**
+ * 将插件放到查找路径中。如果插件不存在，需要将buildscript注释掉。编译生成插件后，再取消注释。
+ */
+buildscript {
+    repositories {
+        flatDir {
+            name 'localRepository'
+            dir "$projectDir/build/target/libs"
+        }
+    }
+    dependencies {
+        classpath(group:'com.windfish.gradle',name:'lazyfish',version: '1.0') {
+            changing = true
+        }
+    }
+}
+
+plugins {
+    id 'java'
+    id 'groovy'
+    id 'maven'
+    id 'maven-publish'
+    id 'java-gradle-plugin'
+    id "com.gradle.plugin-publish" version "0.10.0"
+}
+pluginBundle {
+    website = 'https://github.com/Ken-W-P-Huang/lazyfish'
+    vcsUrl = 'https://github.com/Ken-W-P-Huang/lazyfish.git'
+    tags = ['BC/S','node','grunt']
+}
+
+gradlePlugin {
+    plugins {
+        lazyFishPlugin {
+            id = 'com.windfish.gradle.lazyfish'
+            displayName = 'BC/S Plugin'
+            description = 'facilitate Browser Client/Server Develop'
+            implementationClass = 'com.windfish.gradle.LazyFishPlugin'
+        }
+    }
+}
+//apply plugin:'war'
+//apply plugin:'com.windfish.gradle.lazyfish'
+//
+//javaweb {
+//    dependencies=[
+//            'ali':'com.alipay.sdk:alipay-sdk-java:3.3.4.ALL',
+//    ]
+//    testDependencies=[
+//            'mockito':  'org.mockito:mockito-core:1.+',
+//
+//    ]
+//    zipDependencies=[
+//            wxpay:"https://pay.weixin.qq.com/wiki/doc/api/download/WxPayAPI_JAVA.zip",
+//    ]
+//    jsDependencies=[
+//            vue:"https://cdn.jsdelivr.net/npm/vue/dist/vue.js",
+//            axios:"https://unpkg.com/axios/dist/axios.js",
+//            //jquery-3.3.1.js
+//            jquery:"http://code.jquery.com/jquery-1.9.1.js",
+//            "jquery-migrate":"http://code.jquery.com/jquery-migrate-1.1.0.js",
+//            avalon:"https://raw.githubusercontent.com/RubyLouvre/avalon/1.5.9/dist/avalon.js",
+//            echarts:"http://echarts.baidu.com/dist/echarts3/echarts.js",
+//            d3:"https://github.com/d3/d3/releases/download/v5.7.0/d3.zip",
+//            //d3 IE8兼容库
+//            aight:"https://raw.githubusercontent.com/shawnbot/aight/master/aight.js",
+//            json2:"https://raw.githubusercontent.com/douglascrockford/JSON-js/master/json2.js",
+//            //代码要求url末尾不能有"/"，这里用来表示下载的是htc zip,并且PIE必须大写
+//            'PIE_uncompressed.htc':"http://css3pie.com/download-latest-1.x/",
+//    ]
+//    cssDependencies=[
+////                bootstrap:"https://github.com/ddouble/bsie/zipball/master/",
+////4.7.0   IE7
+//"font-awesome":"http://netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css",
+//"animate":"https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.0/animate.css",
+//    ]
+//    license='Apache-2.0'
+//    vcsType='git'
+//    vcsRemotes=[remote:'ssh://git@phabricator.windfish.club:2222/diffusion/21/LazyFish.git']
+//    addReadme=true
+//    directories=[:]
+//    mirrorToTest=true
+//    testFramework='spock'
+//    mirrorFilter={
+//        exclude "**/JarUtils.java"
+//        include "**"
+//    }
+//    node{
+//        version='10.13.0'
+//    }
+//    grunt{
+//        gruntVersion = '1.0.2'
+//    }
+//}
+
+
+
+group 'com.windfish.gradle'
+version '1.0'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile gradleApi()
+    testCompile 'junit:junit:4.+'
+    testCompile('org.spockframework:spock-core:1.1-groovy-2.4') {
+        exclude group: 'org.codehaus.groovy'
+    }
+}
+
+uploadArchives{
+    repositories{
+        flatDir{
+            name "localRepository"
+            dir "$projectDir/build/target/libs"
+        }
+    }
+}
+
+
+
+
