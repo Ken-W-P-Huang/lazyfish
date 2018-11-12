@@ -66,7 +66,7 @@ javaweb {
 &nbsp;&nbsp;&nbsp;&nbsp;]  
 &nbsp;&nbsp;&nbsp;&nbsp;license='Apache-2.0'  
 &nbsp;&nbsp;&nbsp;&nbsp;vcsType='git'  
-&nbsp;&nbsp;&nbsp;&nbsp;vcsRemotes=[remote:'ssh://git@phabricator.windfish.club:2222/diffusion/21/LazyFish.git']  
+&nbsp;&nbsp;&nbsp;&nbsp;vcsRemotes=[remote:'']  
 &nbsp;&nbsp;&nbsp;&nbsp;addReadme=true  
 &nbsp;&nbsp;&nbsp;&nbsp;directories=[:]  
 &nbsp;&nbsp;&nbsp;&nbsp;mirrorToTest=true  
