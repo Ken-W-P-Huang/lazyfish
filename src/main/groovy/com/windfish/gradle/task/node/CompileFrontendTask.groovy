@@ -1,29 +1,32 @@
 package com.windfish.gradle.task.node
 
-import org.gradle.api.tasks.AbstractExecTask
+import com.windfish.gradle.foundation.os.OS
 
 /**
  * Created by kenhuang on 2018/11/6.
  */
 class CompileFrontendTask extends NodeTask {
     public final static String NAME = "compileFrontend"
-
+    private boolean isGlobal
     CompileFrontendTask() {
         super()
         this.dependsOn(InstallGruntPluginsTask.NAME)
-        this.setCommandLine(null)
+    }
+
+    void setIsGlobal(boolean isGlobal) {
+        this.isGlobal = isGlobal
+    }
+
+    boolean getIsGlobal() {
+        return isGlobal
     }
 
     @Override
-    final void setCommandLine(Iterable args) {
-        super.setCommandLine("node_modules/.bin/grunt")
+    void doExecute(){
+        OS.getInstance().executeCommand {
+            it.commandLine "${OS.instance.getNodeModulesDir(this.isGlobal)}/.bin/grunt"
+        }
     }
-
-    @Override
-    final AbstractExecTask setArgs(Iterable arguments) {
-        return super.setArgs(["node_modules/.bin/grunt"])
-    }
-
 }
 
 

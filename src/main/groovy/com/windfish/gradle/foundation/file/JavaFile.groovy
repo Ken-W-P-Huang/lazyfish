@@ -1,5 +1,7 @@
 package com.windfish.gradle.foundation.file
 
+import org.gradle.internal.impldep.org.apache.commons.collections.map.HashedMap
+
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
@@ -33,7 +35,7 @@ class JavaFile extends AbstractFile {
         return FULL_EXT
     }
 
-    public void mirrorJUnitFile(File sourceDir, File testDir) {
+    public void mirrorJUnitFile(File sourceDir, File testDir,List<String>ignoredMethods) {
         String jUnitFileName = this.absolutePath.replaceFirst(sourceDir.absolutePath, testDir.absolutePath)
                 .replace(this.getFullExtension(), "Test${FULL_EXT}")
         if (jUnitFileName != null) {
@@ -43,25 +45,32 @@ class JavaFile extends AbstractFile {
                 if (packageName != null && packageName != "") {
                     jUnitFile.append("package ${packageName};\n\n")
                 }
-                jUnitFile.append(
-                        "import org.junit.Before;\n" +
-                                "import org.junit.Test;\n\n" +
-                                "public class ${jUnitFile.getShortName()} {\n" +
-                                "    @Before\n" +
-                                "    public void setUp() throws Exception {\n" +
-                                "    }\n\n")
-                this.parseMethods() { methodName ->
-                    jUnitFile.append(
-                            "    @Test" +
-                                    "    public void ${methodName}() throws Exception {\n\n" +
+                jUnitFile.append("import org.junit.Before;\n" +
+                                 "import org.junit.After;\n" +
+                                 "import org.junit.Test;\n\n" +
+                                 "public class ${jUnitFile.getShortName()} {\n"
+                                 )
+                if (!ignoredMethods.contains('init')){
+                    jUnitFile.append("    @Before\n" +
+                                    "    public void init()  {\n" +
                                     "    }\n\n")
+                }
+                this.parseMethods(ignoredMethods) { methodName ->
+                    jUnitFile.append("    @Test\n" +
+                                     "    public void ${methodName}() {\n\n" +
+                                     "    }\n\n")
+                }
+                if (!ignoredMethods.contains('destroy')) {
+                    jUnitFile.append("    @After\n" +
+                            "    public void destroy() {\n\n" +
+                            "    }\n\n")
                 }
                 jUnitFile.append("}")
             }
         }
     }
 
-    public void mirrorSpockFile(File sourceDir, File testDir) {
+    public void mirrorSpockFile(File sourceDir, File testDir,List<String>ignoredMethods) {
         String spockFilePath = this.absolutePath.replaceFirst(sourceDir.absolutePath, testDir.absolutePath)
                 .replace(this.getFullExtension(), "Test${GroovyFile.FULL_EXT}")
         if (spockFilePath != null) {
@@ -76,9 +85,9 @@ class JavaFile extends AbstractFile {
                                 "import spock.lang.Specification\n\n" +
                                 "public class ${spockFile.getShortName()} extends Specification {\n" +
                                 "\n")
-                this.parseMethods() { methodName ->
+                this.parseMethods(ignoredMethods) { methodName ->
                     spockFile.append(
-                            "    def ${methodName} {\n\n" +
+                            "    def ${methodName}() {\n\n" +
                                     "    }\n\n")
                 }
                 spockFile.append("}")
@@ -105,25 +114,29 @@ class JavaFile extends AbstractFile {
         return packageName
     }
 
-    public void mirrorTestFile(File sourceDir, File testDir, String testFramework) {
+    public void mirrorTestFile(File sourceDir, File testDir, String testFramework,List<String>ignoredMethods) {
         switch (testFramework) {
             case "junit":
-                this.mirrorJUnitFile(sourceDir, testDir)
+                this.mirrorJUnitFile(sourceDir, testDir,ignoredMethods)
                 break
             case "spock":
-                this.mirrorSpockFile(sourceDir, testDir)
+                this.mirrorSpockFile(sourceDir, testDir,ignoredMethods)
                 break
             default:
                 break
         }
     }
+
     /**
      * 正则表达式不准确，只要能区分出方法即可，现在不是在搞编译！！！
      * @param closure
      */
-
-    public void parseMethods(Closure closure) {
+    private void parseMethods(List<String>ignoredMethods, Closure closure) {
         String content = this.text
+        Iterator<String> iterator
+        Map<String,Integer> methodMap = new HashMap<>()
+        Integer count
+        String method
         String separatorRegex = "[ \\t]"
         String variableRegex = "([\$_a-zA-Z][\$_a-zA-Z0-9]*)"
         String annotationRegex = "(@[\$_a-zA-Z][\$_a-zA-Z0-9]*${separatorRegex}+)"
@@ -142,13 +155,50 @@ class JavaFile extends AbstractFile {
         String exceptionRegex = "(throws${separatorRegex}*${variableRegex}${separatorRegex}*)?"
         String endRegex = "((\\{${separatorRegex}*\\n)|(\\n${separatorRegex}*\\{))"
         String regex = "(${startRegex}${modifyRegex}${synchronizedRegex}${volatileRegex}${returnTypeRegex})" +
-                "${methodNameRegex}(${parametersRegex}" +
-                "(?=${exceptionRegex}${endRegex}))"
+                "${methodNameRegex}(?=${parametersRegex}${exceptionRegex}${endRegex})"
         Pattern pattern = Pattern.compile(regex, Pattern.DOTALL)
         Matcher matcher = pattern.matcher(content)
-        while (matcher.find()) {
-            closure(content.substring(matcher.start(), matcher.end()))
+        loop:while (matcher.find()) {
+            method = content.substring(matcher.start(), matcher.end())
+            iterator = ignoredMethods.iterator()
+            while (iterator.hasNext()){
+                if (method.startsWith(iterator.next())){
+                    continue loop
+                }
+            }
+            if (method.startsWith( 'catch')){
+                continue loop
+            }
+            if (method.startsWith('equals')){
+                continue loop
+            }
+            if (method.startsWith( 'hashCode')){
+                continue loop
+            }
+            if (method.startsWith( 'toString')){
+                continue loop
+            }
+            count = (Integer)methodMap.get(method)
+            if (count == null){
+                /*方法没有重载*/
+                methodMap.put(method,0)
+            }else{
+                count += 1
+                methodMap.put(method,count)
+                method += count
+            }
+            closure(method)
         }
     }
+
+//    public void copyImportStatement(JavaFile destination){
+//        String content = this.text
+//        String regex = "(?<=\n)[ \\t]*?import[ \\t].*?\n"
+//        Pattern pattern = Pattern.compile(regex, Pattern.DOTALL)
+//        Matcher matcher = pattern.matcher(content)
+//        while (matcher.find()) {
+//            destination.append(content.substring(matcher.start(), matcher.end()))
+//        }
+//    }
 }
 

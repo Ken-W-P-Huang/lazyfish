@@ -10,6 +10,10 @@ class TarFile extends AbstractFile {
     public final static String EXT = 'tar'
     public final static String FULL_EXT = '.tar'
 
+    TarFile(String fullPath) {
+        super(fullPath)
+    }
+
     TarFile(String path, String name) {
         super("${path}/${name}${FULL_EXT}")
     }

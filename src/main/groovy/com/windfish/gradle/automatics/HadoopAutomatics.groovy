@@ -1,6 +1,7 @@
 package com.windfish.gradle.automatics
 
 import com.windfish.gradle.foundation.extension.HadoopExtension
+import com.windfish.gradle.foundation.os.OS
 import org.gradle.api.Project
 
 /**
@@ -8,8 +9,9 @@ import org.gradle.api.Project
  */
 class HadoopAutomatics extends JavaAutomatics {
     HadoopAutomatics(Project project) {
-        super(project)
+        super()
         this.project = project
+        OS.instance.project = project
         this.extension = project.getExtensions().create(HadoopExtension.NAME, HadoopExtension)
     }
 }

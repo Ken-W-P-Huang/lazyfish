@@ -8,8 +8,8 @@ import org.gradle.util.ConfigureUtil
  */
 class JavaWebExtension extends JavaExtension {
     public final static String NAME = 'javaweb'
-    public Map<String, String> jsDependencies
-    public Map<String, String> cssDependencies
+    public Map<String, String> jsDependencies=[:]
+    public Map<String, String> cssDependencies=[:]
     public String jsPath = "src/main/webapp/js"
     public String jsPathInWar = "js"
     public String cssPath = "src/main/webapp/css"
@@ -17,6 +17,8 @@ class JavaWebExtension extends JavaExtension {
     public NodeExtension node = new NodeExtension()
     public GruntExtension grunt = new GruntExtension()
     public String webXmlPath = "src/main/resources/"
+    public String hbmXmlPackageName = "repository/entity"
+
 
     NodeExtension node(Closure closure) {
         return node(ConfigureUtil.configureUsing(closure))

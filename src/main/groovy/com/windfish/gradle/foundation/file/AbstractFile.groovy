@@ -42,7 +42,7 @@ public abstract class AbstractFile extends File {
                     new URL(urlString).withInputStream { i -> this.withOutputStream { it << i } }
                     return
                 } else {
-                    /* 重定向连接 */
+                    /* 从重定向连接下载文件 */
                     while (urlString) {
                         new URL(urlString).openConnection().with { redirectConnection ->
                             redirectConnection.instanceFollowRedirects = false

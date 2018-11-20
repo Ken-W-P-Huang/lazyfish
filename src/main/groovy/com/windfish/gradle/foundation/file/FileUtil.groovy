@@ -91,43 +91,62 @@ class FileUtil {
         }
     }
 
-    public static String relativeTo(String path, String relativePath) {
-        if (path.startsWith(relativePath)) {
-            return path.substring(relativePath.length())
+    public static String relativeTo(String path, String otherPath) {
+        if (path.equals(otherPath)){
+            return  "/"
+        }
+        if (path.startsWith(otherPath)) {
+            String relativePath = path.substring(otherPath.length())
+            if (relativePath.startsWith("/")){
+                return relativePath.substring(1)
+            }
+            return null
         }
         return null
     }
     /**
      * 将源目录的内容按照test的标准映射到目标目录中
      */
-    public static void mirrorSourceToTest(File sourceDir, File testDir, FileTree targetFiles, String testFramework) {
+    public static void mirrorSourceToTest(Project project,File sourceDir, File testDir, FileTree targetFiles,
+                                          String testFramework,Map<String, List<String>>ignoredTestMethodsMap) {
         String relativePath
-        def fileFromSource, fileFromTest
+        List<String> ignoredMethods
+        List<String> defaultIgnoredMethods = ignoredTestMethodsMap.get('default')
+        def dirFromSource, fileFromTest
         List<File> stack = new LinkedList<>()
         stack.push(sourceDir)
         while (stack.size() > 0) {
-            fileFromSource = stack.pop()
-            if (!fileFromSource.isHidden()) {
-                relativePath = relativeTo(fileFromSource.absolutePath, sourceDir.absolutePath)
-                if (fileFromSource.isDirectory()) {
-                    fileFromSource.listFiles().each { file ->
-                        stack.push(file)
-                    }
-                    if (relativePath != null && relativePath != "") {
-                        fileFromTest = new File("${testDir.absolutePath}${relativePath}")
-                        !fileFromTest.exists() && fileFromTest.mkdirs()
-                    }
-                } else {
-                    if (targetFiles.contains(fileFromSource)) {
-                        switch (getExtName(fileFromSource)) {
-                            case JavaFile.EXT:
-                                new JavaFile(fileFromSource.absolutePath).mirrorTestFile(sourceDir, testDir, testFramework)
-                                break
-                            case GroovyFile.EXT:
-                                new GroovyFile(fileFromSource.absolutePath).mirrorTestFile(sourceDir, testDir, testFramework)
-                                break
-                            default:
-                                break
+            dirFromSource = stack.pop()
+            if (!dirFromSource.isHidden()) {
+                relativePath = relativeTo(dirFromSource.absolutePath, sourceDir.absolutePath)
+                if (relativePath != null && relativePath != "") {
+                    fileFromTest = new File("${testDir.absolutePath}/${relativePath}")
+                    !fileFromTest.exists() && fileFromTest.mkdirs()
+                }
+                ignoredMethods = ignoredTestMethodsMap.get(relativeTo(dirFromSource.absolutePath,
+                        project.rootDir.absolutePath))
+                if (ignoredMethods == null){
+                    ignoredMethods = defaultIgnoredMethods
+                }
+                dirFromSource.listFiles().each { file ->
+                    if (!file.isHidden()){
+                        if (file.isDirectory()) {
+                            stack.push(file)
+                        } else {
+                            if (targetFiles.contains(file)) {
+                                switch (getExtName(file)) {
+                                    case JavaFile.EXT:
+                                        new JavaFile(file.absolutePath)
+                                                .mirrorTestFile(sourceDir, testDir, testFramework,ignoredMethods)
+                                        break
+                                    case GroovyFile.EXT:
+                                        new GroovyFile(file.absolutePath)
+                                                .mirrorTestFile(sourceDir, testDir, testFramework,ignoredMethods)
+                                        break
+                                    default:
+                                        break
+                                }
+                            }
                         }
                     }
                 }
@@ -147,3 +166,31 @@ class FileUtil {
         return extName
     }
 }
+
+
+//relativePath = relativeTo(fileFromSource.absolutePath, sourceDir.absolutePath)
+//if (fileFromSource.isDirectory()) {
+//    fileFromSource.listFiles().each { file ->
+//        stack.push(file)
+//    }
+//    if (relativePath != null && relativePath != "") {
+//        fileFromTest = new File("${testDir.absolutePath}${relativePath}")
+//        !fileFromTest.exists() && fileFromTest.mkdirs()
+//    }
+//} else {
+//    if (targetFiles.contains(fileFromSource)) {
+//
+//        switch (getExtName(fileFromSource)) {
+//            case JavaFile.EXT:
+//                new JavaFile(fileFromSource.absolutePath)
+//                        .mirrorTestFile(sourceDir, testDir, testFramework,ignoredMethods)
+//                break
+//            case GroovyFile.EXT:
+//                new GroovyFile(fileFromSource.absolutePath)
+//                        .mirrorTestFile(sourceDir, testDir, testFramework,ignoredMethods)
+//                break
+//            default:
+//                break
+//        }
+//    }
+//}

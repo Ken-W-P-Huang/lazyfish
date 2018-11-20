@@ -8,11 +8,11 @@ class TarGzFile extends TarFile {
     public final static String FULL_EXT = '.tar.gz'
 
     TarGzFile(String path, String name) {
-        super("${path}", "${name}${FULL_EXT}")
+        super("${path}/${name}${FULL_EXT}")
     }
 
     TarGzFile(File parent, String name) {
-        super(parent, "${name}${FULL_EXT}")
+        super("${parent.absolutePath}/${name}${FULL_EXT}")
     }
 
     @Override

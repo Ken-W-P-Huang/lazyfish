@@ -1,6 +1,7 @@
 package com.windfish.gradle.task.node
 
 import com.windfish.gradle.foundation.extension.GruntExtension
+import com.windfish.gradle.foundation.os.OS
 
 /**
  * Created by kenhuang on 2018/10/27.
@@ -15,23 +16,14 @@ class InstallGruntTask extends NpmTask {
 
     void setExtension(GruntExtension extension) {
         this.extension = extension
-        if (this.isModuleInstalled("grunt", null)
-                && this.isModuleInstalled("grunt-cli", null)) {
-            super.setCommandLine('echo', 'grunt has been installed!')
-        } else {
-            String gruntCliVersion = ''
-            String gruntVersion = ''
-            if (extension.gruntVersion != null && extension.gruntVersion != ''){
-                gruntVersion = "@${extension.gruntVersion}"
-            }
-            if (extension.gruntCliVersion != null && extension.gruntCliVersion != ''){
-                gruntCliVersion = "@${extension.gruntCliVersion}"
-            }
-            super.setCommandLine(this.whichCommand('npm'), 'install',
-                    "grunt${gruntVersion}",  "grunt-cli${gruntCliVersion}")
-        }
     }
 
+    @Override
+    void doExecute() {
+        File nodeModulesDir = OS.instance.getNodeModulesDir(this.extension.isGlobal)
+        this.installModule("grunt",this.extension.gruntVersion, nodeModulesDir)
+        this.installModule("grunt-cli",this.extension.gruntCliVersion,nodeModulesDir)
+    }
 }
 
 

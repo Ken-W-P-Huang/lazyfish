@@ -1,18 +1,19 @@
 package com.windfish.gradle.automatics
 
+import com.windfish.gradle.foundation.IntelliJIDEA
+import com.windfish.gradle.foundation.IntelliJIDEATaskPhase
 import com.windfish.gradle.foundation.extension.JavaWebExtension
 import com.windfish.gradle.foundation.file.*
-import com.windfish.gradle.task.node.CompileFrontendTask
-import com.windfish.gradle.task.node.InstallGruntPluginsTask
-import com.windfish.gradle.task.node.InstallGruntTask
-import com.windfish.gradle.task.node.InstallNodeTask
-import com.windfish.gradle.task.node.NodeTask
-import com.windfish.gradle.task.node.NpmInitTask
-import org.gradle.api.DefaultTask
+import com.windfish.gradle.foundation.os.OS
+import com.windfish.gradle.task.node.*
 import org.gradle.api.GradleException
 import org.gradle.api.Project
-import org.gradle.api.tasks.Exec
+import org.gradle.api.plugins.JavaPluginConvention
+import org.gradle.api.tasks.Copy
+import org.gradle.api.tasks.SourceSet
+import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.bundling.War
+
 /**
  * Created by kenhuang on 2018/10/30.
  */
@@ -21,6 +22,7 @@ class JavaWebAutomatics extends JavaAutomatics {
     JavaWebAutomatics(Project project) {
         super()
         this.project = project
+        OS.instance.project = project
         this.extension = project.getExtensions().create(JavaWebExtension.NAME, JavaWebExtension)
     }
 
@@ -28,7 +30,7 @@ class JavaWebAutomatics extends JavaAutomatics {
     void execute() {
         super.execute()
         this.executeFrontendTasks()
-//        this.customizeWar()
+        this.customizeWar()
     }
 
     private void downloadUnzip(String fileName, String ext, String urlString, String unzipPath) {
@@ -42,33 +44,40 @@ class JavaWebAutomatics extends JavaAutomatics {
  * 创建前端任务，安装Node，Npm,Grunt,可以考虑gulp。WebService无用
  ******************************************************************************************************************/
     private void executeFrontendTasks() {
-
         /*Node*/
-        this.project.tasks.create(InstallNodeTask.NAME, InstallNodeTask) { task ->
-            task.setExtension(this.extension.node, this.extension.node.tmpDirPath)
+        this.project.tasks.create(InstallNodeTask.NAME, InstallNodeTask) {
+            it.setExtension(this.extension.node)
+            it.setTmpDirPath('build/tmp/node')
         }.execute()
+        /*Grunt*/
+        this.project.tasks.create(InstallGruntTask.NAME, InstallGruntTask) {
+            it.setExtension(this.extension.grunt)
+        }.execute()
+        this.project.tasks.create(InstallGruntPluginsTask.NAME, InstallGruntPluginsTask){
+            it.setExtension(this.extension.grunt)
+        }.execute()
+        this.project.tasks.create(CompileFrontendTask.NAME, CompileFrontendTask){
+            it.isGlobal = this.extension.grunt.isGlobal
+        }
+
+        /*生成package.json*/
+
         NpmInitTask npmInit = this.project.tasks.create(NpmInitTask.NAME, NpmInitTask)
-        NodeTask npmInitP = this.project.tasks.create('npmInitP', NodeTask) { task ->
-            task.description = 'add package name to package.json'
-            commandLine "node_modules/.bin/json", "-I", "-f", 'package.json', '-e',
-                    'this.warName=\"' + this.project.war.archiveName + '\"'
+        NodeTask npmInitP = this.project.tasks.create('npmInitP', NodeTask) {
+            it.description = 'add package name to package.json'
+            if (this.project.hasProperty('war')){
+                it.setCommandLine("node_modules/.bin/json", "-I", "-f", 'package.json', '-e',
+                        "this.warName=\"${this.project.war.archiveName}\"")
+            }else{
+                it.setCommandLine("echo","Please apply plugin war for java web application!")
+            }
         }
         npmInit.finalizedBy('npmInitP')
         npmInit.execute()
         npmInitP.execute()
 
-        /*Grunt*/
-        this.project.tasks.create(InstallGruntTask.NAME, InstallGruntTask) { task ->
-            task.setExtension(this.extension.grunt)
-        }.execute()
-        this.project.tasks.create(InstallGruntPluginsTask.NAME, InstallGruntPluginsTask){ task ->
-            task.setExtension(this.extension.grunt)
-        }.execute()
-        this.project.tasks.create(CompileFrontendTask.NAME, CompileFrontendTask)
-
         /*将生成Gruntfile.js文件，并将其中的js，css路径替换为设定的路径*/
-        this.project.tasks.create('generateGruntfile', DefaultTask) { task ->
-            task.group = NodeTask.GROUP
+        this.project.tasks.create('generateGruntfile', NodeTask) {
             File gruntFile = this.project.file("Gruntfile.js")
             InputStream inputStream = FileUtil.classLoader.getResourceAsStream("frontend/Gruntfile.js")
             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))
@@ -78,14 +87,15 @@ class JavaWebAutomatics extends JavaAutomatics {
                 builder.append(line).append(System.getProperty("line.separator"))
             }
             BufferedWriter writer = new BufferedWriter(new FileWriter(gruntFile))
-            writer.write(builder.toString().replaceAll("src/main/webapp/css/", ((JavaWebExtension) this.extension).cssPath)
+            writer.write(builder.toString().replaceAll("src/main/webapp/css", ((JavaWebExtension) this.extension).cssPath)
                     .replaceAll("build/libs/exploded/<%= pkg.warName %>/css",
                     "build/libs/exploded/<%= pkg.warName %>/" + ((JavaWebExtension) this.extension).cssPathInWar)
-                    .replaceAll("src/main/webapp/js/", ((JavaWebExtension) this.extension).jsPath)
+                    .replaceAll("src/main/webapp/js", ((JavaWebExtension) this.extension).jsPath)
                     .replaceAll("build/libs/exploded/<%= pkg.warName %>/js",
                     "build/libs/exploded/<%= pkg.warName %>/" + ((JavaWebExtension) this.extension).jsPathInWar))
             inputStream.close()
             writer.close()
+            it.setCommandLine("echo","Gruntfile is generated.")
         }.execute()
     }
 /******************************************************************************************************************
@@ -157,14 +167,25 @@ class JavaWebAutomatics extends JavaAutomatics {
         } else {
             throw new GradleException("${webXmlPath} doesn't exist!")
         }
+        List<IntelliJIDEATaskPhase>phases = new LinkedList<>()
+        phases.push(IntelliJIDEATaskPhase.BEFORE_COMPILE)
         /*排除原始css和js，并在打包任务开始前先执行前端编译任务*/
         this.project.tasks.each { task ->
             if (task instanceof War) {
                 task.rootSpec.exclude("**/${((JavaWebExtension) this.extension).cssPath}/**")
                 task.rootSpec.exclude("**/${((JavaWebExtension) this.extension).jsPath}/**")
                 task.dependsOn CompileFrontendTask.NAME
+
+                IntelliJIDEA.setPhases(CompileFrontendTask.NAME,this.project,phases)
             }
         }
+        /*将hbm.xml的内容复制到war中*/
+        this.project.tasks.create('copyHbmXml',Copy){
+            from "src/main/java/${this.extension.hbmXmlPackageName}"
+            into  "${this.project.sourceSets.main.output.classesDir}/${this.extension.hbmXmlPackageName}"
+            include '**/*.hbm.xml'
+        }
+        IntelliJIDEA.setPhases('copyHbmXml',this.project,phases)
     }
 }
 

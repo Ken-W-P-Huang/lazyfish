@@ -5,6 +5,7 @@ import com.windfish.gradle.foundation.extension.JavaExtension
 import com.windfish.gradle.foundation.file.FileUtil
 import com.windfish.gradle.foundation.file.JarFile
 import com.windfish.gradle.foundation.file.ZipFile
+import com.windfish.gradle.foundation.os.OS
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.tasks.SourceSet
@@ -25,9 +26,9 @@ class JavaAutomatics {
     }
 
     JavaAutomatics(Project project) {
-        this.project = project
         this.extension = project.getExtensions().create(JavaExtension.NAME, JavaExtension)
-
+        this.project = project
+        OS.instance.project = project
     }
 
     public void execute() {
@@ -54,9 +55,12 @@ class JavaAutomatics {
                 test.getAllJava().srcDirs.each { destination ->
                     /*main的java子文件夹的内容映射到test的java子文件夹，groovy相同*/
                     if (source.name.equals(destination.name)) {
-                        FileUtil.mirrorSourceToTest(source, destination,
+                        FileUtil.mirrorSourceToTest(this.project,
+                                source,
+                                destination,
                                 this.project.fileTree(source, this.extension.mirrorFilter),
-                                this.extension.testFramework.toLowerCase())
+                                this.extension.testFramework.toLowerCase(),
+                                this.extension.ignoredTestMethodsMap)
                     }
                 }
             }
@@ -115,7 +119,6 @@ class JavaAutomatics {
                 if (this.extension.license != null && this.extension.license != '') {
                     content = content.concat("\n\n# License\n\n${this.extension.license}\n")
                 }
-                content = content.concat("\n\n# Badges\n")
                 FileChannel outputChannel = new FileOutputStream(readmeFile).getChannel()
                 ByteBuffer buffer = ByteBuffer.wrap(content.bytes)
                 outputChannel.write(buffer)

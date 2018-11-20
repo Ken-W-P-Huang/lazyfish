@@ -4,6 +4,8 @@ package com.windfish.gradle.foundation.extension
  */
 class GruntExtension {
     String gruntVersion = ""
+    boolean isGlobal =false
+    File nodeModulesDir
     String gruntCliVersion = ""
     String concatVersion = ""
     String csslintVersion = ""
@@ -12,6 +14,7 @@ class GruntExtension {
     String uglifyVersion = ""
     String watchVersion = ""
     String jsonVersion = ""
+
 }
 
 

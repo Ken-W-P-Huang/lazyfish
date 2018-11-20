@@ -69,7 +69,7 @@ module.exports = function (grunt) {
                 "curly": true,     //Require {} for every new block or scope
                 "eqeqeq": true,     //Require triple equals (===) for comparison
                 "forin": true,     //Require filtering for in loops with obj.hasOwnProperty()
-                "freeze": true,     //prohibits overwriting prototypes of native objects
+                "freeze": false,     //prohibits overwriting prototypes of native objects
                 "immed": false,    //Require immediate invocations to be wrapped in parens
                 "latedef": false,    //Require variables/functions to be defined before being used
                 "newcap": false,    //Require capitalization of all constructor functions
@@ -80,7 +80,7 @@ module.exports = function (grunt) {
                 "plusplus": false,    //Prohibit use of `++` and `--`
                 "quotmark": false,
                 "undef": true,     //Require all non-global variables to be declared
-                "unused": true,
+                "unused": false,
                 "strict": false,     //Requires all functions run in ES5 Strict Mode
                 "maxparams": false,    // {int} Max number of formal params allowed per function
                 "maxdepth": false,    // {int} Max depth of nested blocks (within functions)

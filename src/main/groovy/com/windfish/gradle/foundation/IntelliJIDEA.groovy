@@ -9,7 +9,7 @@ import org.gradle.api.Project
  * Created by kenhuang on 2018/10/27.
  */
 enum IntelliJIDEATaskPhase {
-    BEFORE_SYNC(), AFTER_SYNC(), BEFORE_BUILD(), AFTER_BUILD(), BEFORE_REBUILD(), AFTER_REBUILD(),
+    BEFORE_SYNC(), AFTER_SYNC(), BEFORE_COMPILE(), AFTER_COMPILE(), BEFORE_RECOMPILE(), AFTER_RECOMPILE(),
 }
 
 class IntelliJIDEA {
@@ -41,7 +41,7 @@ class IntelliJIDEA {
                 if (!gitDirectory.exists()) {
                     println('git init'.execute([], this.project.rootDir).text.trim())
                 }
-                FileUtil.copyResource("cvs/git.gitignore", this.project.file(".gitignore"))
+                FileUtil.copyResource("vcs/git.gitignore", this.project.file(".gitignore"))
                 this.addVcsXML("Git")
                 //添加git远程服务器
                 vcsRemotes.each { item ->
@@ -61,26 +61,26 @@ class IntelliJIDEA {
 /******************************************************************************************************************
  * 设置Gradle任务何时自动执行
  ******************************************************************************************************************/
-    public void setPhases(IntelliJIDEATaskPhase[] phases) {
-        if (phases != null && phases.length > 0) {
+    public static void setPhases(String taskName,Project project,List<IntelliJIDEATaskPhase> phases) {
+        if (phases != null && phases.size() > 0) {
             def phaseName
             phases.each { phase ->
                 phaseName = phase.toString().toLowerCase()
-                def workspaceXML = this.project.file(".idea/workspace.xml")
+                def workspaceXML = project.file(".idea/workspace.xml")
                 def projectNode = new XmlSlurper().parse(workspaceXML)
                 def doesTaskExist = false
                 projectNode.component.find { item ->
                     if (item.@name.equals("ExternalProjectsManager")) {
                         if (item.system.state.task.activation."$phaseName".size() > 0) {
                             item.system.state.task.activation."$phaseName".task.each { taskNode ->
-                                if (taskNode.@name.equals(this.name)) {
+                                if (taskNode.@name.equals(taskName)) {
                                     doesTaskExist = true
                                     return
                                 }
                             }
                             if (!doesTaskExist) {
                                 item.system.state.task.activation."$phaseName".appendNode {
-                                    task(name: this.name)
+                                    task(name: taskName)
                                 }
                             } else {
                                 return
@@ -88,7 +88,7 @@ class IntelliJIDEA {
                         } else {
                             item.system.state.task.activation.appendNode {
                                 "$phaseName" {
-                                    task(name: this.name)
+                                    task(name: taskName)
                                 }
                             }
                         }

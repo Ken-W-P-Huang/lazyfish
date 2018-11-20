@@ -1,7 +1,6 @@
 package com.windfish.gradle.task.node
 
-import org.gradle.api.Project
-import org.gradle.api.tasks.AbstractExecTask
+import com.windfish.gradle.foundation.os.OS
 
 /**
  * Created by kenhuang on 2018/10/27.
@@ -13,18 +12,13 @@ class NpmInitTask extends NodeTask {
         super()
         this.description = 'Init npm project with package.json.'
         this.dependsOn(InstallGruntPluginsTask.NAME)
-        this.setCommandLine(null)
     }
 
     @Override
-    final void setCommandLine(Iterable args) {
-        super.setCommandLine(this.whichCommand('npm'), 'init', '-y')
+    void doExecute(){
+        OS.instance.executeCommand {
+            it.commandLine OS.instance.which('npm'), 'init', '-y'
+        }
     }
-
-    @Override
-    final AbstractExecTask setArgs(Iterable arguments) {
-        return super.setArgs([this.whichCommand('npm'), 'init', '-y',this.project.projectDir.absolutePath])
-    }
-
 
 }
