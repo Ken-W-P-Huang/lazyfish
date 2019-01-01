@@ -7,14 +7,16 @@ class GruntExtension {
     boolean isGlobal =false
     File nodeModulesDir
     String gruntCliVersion = ""
-    String concatVersion = ""
-    String csslintVersion = ""
-    String cssminVersion = ""
-    String jshintVersion = ""
-    String uglifyVersion = ""
-    String watchVersion = ""
-    String jsonVersion = ""
-
+    public Map<String, String> plugins=["grunt-contrib-concat":"",
+                                        "grunt-contrib-csslint":"",
+                                        "grunt-contrib-cssmin":"",
+                                        "grunt-contrib-jshint":"",
+                                        "grunt-contrib-uglify":"",
+                                        "grunt-contrib-watch":"",
+                                        "grunt-contrib-htmlmin":"",
+                                        "grunt-includes":"",
+                                        "grunt-contrib-less":"",
+                                        "json":"",]
 }
 
 

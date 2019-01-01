@@ -10,8 +10,10 @@ class JavaWebExtension extends JavaExtension {
     public final static String NAME = 'javaweb'
     public Map<String, String> jsDependencies=[:]
     public Map<String, String> cssDependencies=[:]
+    public String jsLib = "lib"
     public String jsPath = "src/main/webapp/js"
     public String jsPathInWar = "js"
+    public String cssLib = "lib"
     public String cssPath = "src/main/webapp/css"
     public String cssPathInWar = "css"
     public NodeExtension node = new NodeExtension()

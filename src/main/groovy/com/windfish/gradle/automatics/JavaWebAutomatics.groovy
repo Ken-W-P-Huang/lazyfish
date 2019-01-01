@@ -61,7 +61,6 @@ class JavaWebAutomatics extends JavaAutomatics {
         }
 
         /*生成package.json*/
-
         NpmInitTask npmInit = this.project.tasks.create(NpmInitTask.NAME, NpmInitTask)
         NodeTask npmInitP = this.project.tasks.create('npmInitP', NodeTask) {
             it.description = 'add package name to package.json'
@@ -73,30 +72,35 @@ class JavaWebAutomatics extends JavaAutomatics {
             }
         }
         npmInit.finalizedBy('npmInitP')
-        npmInit.execute()
-        npmInitP.execute()
-
+        if (!this.project.file("package.json").exists()){
+            npmInit.execute()
+            npmInitP.execute()
+        }
         /*将生成Gruntfile.js文件，并将其中的js，css路径替换为设定的路径*/
-        this.project.tasks.create('generateGruntfile', NodeTask) {
-            File gruntFile = this.project.file("Gruntfile.js")
-            InputStream inputStream = FileUtil.classLoader.getResourceAsStream("frontend/Gruntfile.js")
-            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))
-            String line
-            StringBuilder builder = new StringBuilder()
-            while ((line = reader.readLine()) != null) {
-                builder.append(line).append(System.getProperty("line.separator"))
-            }
-            BufferedWriter writer = new BufferedWriter(new FileWriter(gruntFile))
-            writer.write(builder.toString().replaceAll("src/main/webapp/css", ((JavaWebExtension) this.extension).cssPath)
-                    .replaceAll("build/libs/exploded/<%= pkg.warName %>/css",
-                    "build/libs/exploded/<%= pkg.warName %>/" + ((JavaWebExtension) this.extension).cssPathInWar)
-                    .replaceAll("src/main/webapp/js", ((JavaWebExtension) this.extension).jsPath)
-                    .replaceAll("build/libs/exploded/<%= pkg.warName %>/js",
-                    "build/libs/exploded/<%= pkg.warName %>/" + ((JavaWebExtension) this.extension).jsPathInWar))
-            inputStream.close()
-            writer.close()
-            it.setCommandLine("echo","Gruntfile is generated.")
-        }.execute()
+        File gruntFile = this.project.file("Gruntfile.js")
+        if (!gruntFile.exists()){
+            this.project.tasks.create('generateGruntfile', NodeTask) {
+                InputStream inputStream = FileUtil.classLoader.getResourceAsStream("frontend/Gruntfile.js")
+                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))
+                String line
+                StringBuilder builder = new StringBuilder()
+                while ((line = reader.readLine()) != null) {
+                    builder.append(line).append(System.getProperty("line.separator"))
+                }
+                BufferedWriter writer = new BufferedWriter(new FileWriter(gruntFile))
+                writer.write(builder.toString().replaceAll("src/main/webapp/css",
+                        ((JavaWebExtension) this.extension).cssPath)
+                        .replaceAll("build/libs/exploded/<%= pkg.warName %>/css",
+                        "build/libs/exploded/<%= pkg.warName %>/" + ((JavaWebExtension) this.extension).cssPathInWar)
+                        .replaceAll("src/main/webapp/js", ((JavaWebExtension) this.extension).jsPath)
+                        .replaceAll("build/libs/exploded/<%= pkg.warName %>/js",
+                        "build/libs/exploded/<%= pkg.warName %>/" + ((JavaWebExtension) this.extension).jsPathInWar))
+                inputStream.close()
+                writer.close()
+                it.setCommandLine("echo","Gruntfile is generated.")
+            }.execute()
+        }
+
     }
 /******************************************************************************************************************
  *  添加项目js css依赖
@@ -105,9 +109,10 @@ class JavaWebAutomatics extends JavaAutomatics {
     protected void addDependencies() {
         super.addDependencies()
         String key, value
-        /*js*/
+        /*下载js库*/
         if (this.extension.jsDependencies != null) {
-            this.project.file(this.extension.jsPath).mkdirs()
+            String jsLibraryPath = this.extension.jsPath +"/"+ this.extension.jsLib
+            this.project.file(jsLibraryPath).mkdirs()
             this.extension.jsDependencies.each { jsDependency ->
                 key = jsDependency.getKey()
                 value = jsDependency.getValue()
@@ -118,30 +123,31 @@ class JavaWebAutomatics extends JavaAutomatics {
                         key = key.replace(HtcFile.FULL_EXT, "")
                     }
                     if (value.endsWith("/")) {
-                        this.downloadUnzip(key, HtcFile.FULL_EXT, value, this.extension.jsPath)
+                        this.downloadUnzip(key, HtcFile.FULL_EXT, value, jsLibraryPath)
                     } else {
-                        new HtcFile("${this.project.file(this.extension.jsPath)}", key).download(value)
+                        new HtcFile("${this.project.file(jsLibraryPath)}", key).download(value)
                     }
                 } else if (value.endsWith(ZipFile.FULL_EXT) || value.endsWith("/")) {
                     /*zip包*/
-                    this.downloadUnzip(key, JsFile.FULL_EXT, value, this.extension.jsPath)
+                    this.downloadUnzip(key, JsFile.FULL_EXT, value, jsLibraryPath)
                 } else {
                     /*直接下载*/
-                    new JsFile("${this.project.file(this.extension.jsPath)}", key).download(value)
+                    new JsFile("${this.project.file(jsLibraryPath)}", key).download(value)
                 }
             }
         }
-        /*css*/
+        /*下载css库*/
         if (this.extension.cssDependencies != null) {
-            this.project.file(this.extension.cssPath).mkdirs()
+            String cssLibraryPath = this.extension.cssPath +"/"+ this.extension.cssLib
+            this.project.file(cssLibraryPath).mkdirs()
             this.extension.cssDependencies.each { cssDependency ->
                 key = cssDependency.getKey()
                 value = cssDependency.getValue()
                 if (value.endsWith(ZipFile.FULL_EXT) || value.endsWith("/")) {
-                    this.downloadUnzip(key, CssFile.FULL_EXT, value, this.extension.cssPath)
+                    this.downloadUnzip(key, CssFile.FULL_EXT, value, cssLibraryPath)
                 } else {
                     /*直接下载*/
-                    new CssFile("${this.project.file(this.extension.cssPath)}", key).download(value)
+                    new CssFile("${this.project.file(cssLibraryPath)}", key).download(value)
                 }
             }
         }
@@ -167,6 +173,7 @@ class JavaWebAutomatics extends JavaAutomatics {
         } else {
             throw new GradleException("${webXmlPath} doesn't exist!")
         }
+
         List<IntelliJIDEATaskPhase>phases = new LinkedList<>()
         phases.push(IntelliJIDEATaskPhase.BEFORE_COMPILE)
         /*排除原始css和js，并在打包任务开始前先执行前端编译任务*/
@@ -175,8 +182,8 @@ class JavaWebAutomatics extends JavaAutomatics {
                 task.rootSpec.exclude("**/${((JavaWebExtension) this.extension).cssPath}/**")
                 task.rootSpec.exclude("**/${((JavaWebExtension) this.extension).jsPath}/**")
                 task.dependsOn CompileFrontendTask.NAME
-
-                IntelliJIDEA.setPhases(CompileFrontendTask.NAME,this.project,phases)
+                //前端和后端分开编译,一起编译会大大拖延速度。
+//                IntelliJIDEA.setPhases(CompileFrontendTask.NAME,this.project,phases)
             }
         }
         /*将hbm.xml的内容复制到war中*/

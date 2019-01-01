@@ -32,7 +32,6 @@ public class LazyFishPlugin implements Plugin<Project> {
 //        } else {
 //            throw new Exception("Unknown project type!This plugin should be applied after plugin java,android or war!")
 //        }
-
         pluginManager.withPlugin('war'){
             if (automatics == null || automatics instanceof JavaAutomatics){
                 automatics = new JavaWebAutomatics(project)

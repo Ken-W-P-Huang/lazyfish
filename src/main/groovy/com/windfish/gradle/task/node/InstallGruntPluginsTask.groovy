@@ -11,7 +11,7 @@ class InstallGruntPluginsTask extends NpmTask {
     private GruntExtension extension
     InstallGruntPluginsTask() {
         super()
-        this.description = 'Install Grunt concat,csslint,cssmin,jshint,uglify,watch,json.'
+        this.description = 'Install Grunt plugins.'
         this.dependsOn(InstallGruntTask.NAME)
     }
     void setExtension(GruntExtension extension) {
@@ -21,13 +21,9 @@ class InstallGruntPluginsTask extends NpmTask {
     @Override
     void doExecute() {
         File nodeModulesDir = OS.instance.getNodeModulesDir(this.extension.isGlobal)
-        this.installModule("grunt-contrib-concat",this.extension.concatVersion,nodeModulesDir)
-        this.installModule("grunt-contrib-csslint",this.extension.csslintVersion,nodeModulesDir)
-        this.installModule("grunt-contrib-cssmin",this.extension.cssminVersion,nodeModulesDir)
-        this.installModule("grunt-contrib-jshint",this.extension.jshintVersion,nodeModulesDir)
-        this.installModule("grunt-contrib-uglify",this.extension.uglifyVersion,nodeModulesDir)
-        this.installModule("grunt-contrib-watch",this.extension.watchVersion,nodeModulesDir)
-        this.installModule("json",this.extension.jsonVersion,nodeModulesDir)
+        this.extension.plugins.each{plugin ->
+            this.installModule(plugin.getKey(),plugin.getValue(),nodeModulesDir)
+        }
     }
 
 }

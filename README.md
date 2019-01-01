@@ -21,7 +21,7 @@ The plugin must be applied after plugin 'java','war',etc as it will use the plug
 Build script snippet for plugins DSL for Gradle 2.1 and later:
 plugins {    
 &nbsp;&nbsp;&nbsp;&nbsp;id 'java'  
-&nbsp;&nbsp;&nbsp;&nbsp;id "com.windfish.gradle.lazyfish" version "1.0.4"  
+&nbsp;&nbsp;&nbsp;&nbsp;id "com.windfish.gradle.lazyfish" version "1.0.62"  
 }
 
 Build script snippet for use in older Gradle versions or where dynamic configuration is required:   
@@ -32,7 +32,7 @@ buildscript {
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}  
 &nbsp;&nbsp;&nbsp;&nbsp;}  
 &nbsp;&nbsp;&nbsp;&nbsp;dependencies {  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;classpath "com.windfish.gradle.lazyfish:lazyfish-gradle-plugin:1.0.4"  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;classpath "com.windfish.gradle.lazyfish:lazyfish-gradle-plugin:1.0.62"  
 &nbsp;&nbsp;&nbsp;&nbsp;}  
 }  
 
